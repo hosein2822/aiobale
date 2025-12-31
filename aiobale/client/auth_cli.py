@@ -30,13 +30,20 @@ class PhoneLoginCLI:
     # ---------------------------
     # Output & input helpers
     # ---------------------------
+        self.input_queue: asyncio.Queue[str] = asyncio.Queue()
+
     def _print(self, en: str, fa: str, color=Fore.WHITE):
         msg = fa if self.fingilish_mode else en
         print(color + msg)
 
-    def _input(self, en_prompt: str, fa_prompt: str, color=Fore.WHITE) -> str:
+    async def _input(self, en_prompt: str, fa_prompt: str, color=Fore.WHITE) -> str:
+ 
         prompt = fa_prompt if self.fingilish_mode else en_prompt
-        return input(color + prompt)
+ 
+        print(color + prompt)
+
+        raw = await self.input_queue.get()
+        return str(raw)
 
     # ---------------------------
     # Flow
@@ -63,7 +70,7 @@ class PhoneLoginCLI:
             Fore.CYAN,
         )
         while True:
-            raw = self._input("Phone number: ", "Shomare: ", Fore.YELLOW)
+            raw = await self._input("Phone number: ", "Shomare: ", Fore.YELLOW)
             raw = raw.replace("+", "").strip()
 
             low = raw.lower()
@@ -178,9 +185,7 @@ class PhoneLoginCLI:
 
                 try:
                     code = await asyncio.wait_for(
-                        asyncio.to_thread(
-                            self._input, "Enter code: ", "Code ra vared kon: ", Fore.BLUE
-                        ),
+                        self._input("Enter code: ", "Code ra vared kon: ", Fore.BLUE),
                         timeout=remaining_time,
                     )
                 except asyncio.TimeoutError:
